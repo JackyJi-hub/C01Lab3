@@ -82,6 +82,7 @@ app.post("/postNote", express.json(), async (req, res) => {
 app.delete("/deleteNote/:noteId", express.json(), async (req, res) => {
   try {
     // Basic param checking
+    console.log("ok")
     const noteId = req.params.noteId;
     if (!ObjectId.isValid(noteId)) {
       return res.status(400).json({ error: "Invalid note ID." });
@@ -126,22 +127,35 @@ app.patch("/patchNote/:noteId", express.json(), async (req, res) => {
     // Find note with given ID
     const collection = db.collection(COLLECTIONS.notes);
     const data = await collection.updateOne({
-      username: decoded.username,
       _id: new ObjectId(noteId),
     }, {
-      $set: {
-        ...(title && {title}),
-        ...(content && {content})
+        $set: {
+            title:title,
+            content:content
+          }
+        });
+    
+        if (data.matchedCount === 0) {
+          return res
+            .status(404)
+            .json({ error: "Unable to find note with given ID." });
+        }
+        res.json({ response: `Document with ID ${noteId} patched.` });
+      } catch (error) {
+        res.status(500).json({error: error.message})
       }
-    });
-
-    if (data.matchedCount === 0) {
-      return res
-        .status(404)
-        .json({ error: "Unable to find note with given ID." });
-    }
-    res.json({ response: `Document with ID ${noteId} patched.` });
-  } catch (error) {
-    res.status(500).json({error: error.message})
-  }
-})
+    })
+    
+    // Delete all notes
+    app.delete("/deleteAllNotes", express.json(), async (req, res) => {
+      try {
+    
+        // Find note with given ID
+        const collection = db.collection(COLLECTIONS.notes);
+        const data = await collection.deleteMany({});
+    
+        res.json({ response: data.deletedCount + ` deleted.` });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    })
